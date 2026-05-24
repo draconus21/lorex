@@ -343,6 +343,7 @@ class CameraStreamActivity : AppCompatActivity() {
             LorexApiClient.LightMode.AUTO -> LorexApiClient.LightMode.ON
             LorexApiClient.LightMode.ON   -> LorexApiClient.LightMode.OFF
             LorexApiClient.LightMode.OFF  -> LorexApiClient.LightMode.AUTO
+            else                          -> LorexApiClient.LightMode.AUTO
         }
         lightMode = next
         binding.btnLight.setImageResource(lightIcons[next] ?: R.drawable.ic_light_auto)
@@ -353,9 +354,10 @@ class CameraStreamActivity : AppCompatActivity() {
                         "Light control failed: ${it.message}", Toast.LENGTH_SHORT).show()
                     // Revert icon on failure
                     lightMode = when (next) {
-                        LorexApiClient.LightMode.ON  -> LorexApiClient.LightMode.AUTO
-                        LorexApiClient.LightMode.OFF -> LorexApiClient.LightMode.ON
+                        LorexApiClient.LightMode.ON   -> LorexApiClient.LightMode.AUTO
+                        LorexApiClient.LightMode.OFF  -> LorexApiClient.LightMode.ON
                         LorexApiClient.LightMode.AUTO -> LorexApiClient.LightMode.OFF
+                        else                          -> LorexApiClient.LightMode.AUTO
                     }
                     binding.btnLight.setImageResource(lightIcons[lightMode] ?: R.drawable.ic_light_auto)
                 }

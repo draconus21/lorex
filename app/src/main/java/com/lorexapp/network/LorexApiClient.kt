@@ -12,8 +12,7 @@ import java.util.concurrent.TimeUnit
  * Handles Lorex/Dahua CGI HTTP commands:
  *  - PTZ (pan, tilt, zoom start/stop)
  *  - Snapshot capture
- *
- * All Lorex cameras use the Dahua SDK CGI API under the hood.
+ *  - Light control (IR / white light)
  */
 object LorexApiClient {
 
@@ -45,14 +44,9 @@ object LorexApiClient {
         PtzAction.STOP     -> "Stop"
     }
 
-    /**
-     * Send a PTZ start command (hold action).
-     * Call [ptzStop] when the user releases the button.
-     */
     suspend fun ptzStart(camera: Camera, action: PtzAction, speed: Int = 4): Result<Unit> =
         ptzCommand(camera, "start", ptzCode(action), speed)
 
-    /** Stop all PTZ movement */
     suspend fun ptzStop(camera: Camera, action: PtzAction = PtzAction.STOP): Result<Unit> =
         ptzCommand(camera, "stop", ptzCode(action), 0)
 
@@ -60,7 +54,7 @@ object LorexApiClient {
         camera: Camera, act: String, code: String, speed: Int
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val ch = camera.channel - 1 // Dahua uses 0-based channel
+            val ch = camera.channel - 1
             val url = "${camera.httpBase()}/cgi-bin/ptz.cgi" +
                       "?action=$act&channel=$ch&code=$code&arg1=0&arg2=$speed&arg3=0"
             val req = Request.Builder().url(url).build()
@@ -85,9 +79,6 @@ object LorexApiClient {
 
     // ── Snapshot ──────────────────────────────────────────────────────────────
 
-    /**
-     * Downloads a JPEG snapshot from the camera and returns it as a [Bitmap].
-     */
     suspend fun fetchSnapshot(camera: Camera): Result<Bitmap> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -101,18 +92,6 @@ object LorexApiClient {
             }
         }
 
-    // ── Stream reachability check ─────────────────────────────────────────────
-
-    suspend fun isReachable(camera: Camera): Boolean = withContext(Dispatchers.IO) {
-        runCatching {
-            val req = Request.Builder()
-                .url("${camera.httpBase()}/cgi-bin/magicBox.cgi?action=getSystemInfo")
-                .build()
-            buildClient(camera).newCall(req).execute().use { it.isSuccessful }
-        }.getOrDefault(false)
-    }
-}
-
     // ── Light control ─────────────────────────────────────────────────────────
 
     enum class LightMode { AUTO, ON, OFF }
@@ -122,8 +101,6 @@ object LorexApiClient {
      *   AUTO  – camera decides based on ambient light
      *   ON    – force illuminators on at full brightness
      *   OFF   – turn all illuminators off
-     *
-     * Uses the Dahua configManager CGI which all Lorex firmware supports.
      */
     suspend fun setLight(camera: Camera, mode: LightMode): Result<Unit> =
         withContext(Dispatchers.IO) {
@@ -137,7 +114,6 @@ object LorexApiClient {
                 var url = "${camera.httpBase()}/cgi-bin/configManager.cgi" +
                           "?action=setConfig&Lighting[$ch][0].Mode=$modeStr"
                 if (mode == LightMode.ON) {
-                    // Also set brightness to 100 when forcing manual on
                     url += "&Lighting[$ch][0].MiddleLight[0].Light=100"
                 }
                 val req = Request.Builder().url(url).build()
@@ -146,3 +122,15 @@ object LorexApiClient {
                 }
             }
         }
+
+    // ── Reachability check ────────────────────────────────────────────────────
+
+    suspend fun isReachable(camera: Camera): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            val req = Request.Builder()
+                .url("${camera.httpBase()}/cgi-bin/magicBox.cgi?action=getSystemInfo")
+                .build()
+            buildClient(camera).newCall(req).execute().use { it.isSuccessful }
+        }.getOrDefault(false)
+    }
+}

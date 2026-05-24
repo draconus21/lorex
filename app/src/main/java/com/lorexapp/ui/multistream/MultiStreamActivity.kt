@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.*
 import android.view.*
+import android.widget.GridLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -96,11 +97,13 @@ class MultiStreamActivity : AppCompatActivity() {
             cellBinding.tvCellStatus.text = "Connecting…"
 
             // Set cell dimensions for 16:9
-            val params = GridLayout.LayoutParams().apply {
-                width  = cellWidthPx
-                height = cellHeightPx
-                setMargins(2, 2, 2, 2)
-                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            val params = GridLayout.LayoutParams(
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            ).also {
+                it.width  = cellWidthPx
+                it.height = cellHeightPx
+                it.setMargins(2, 2, 2, 2)
             }
             binding.gridCameras.addView(cellBinding.root, params)
 
@@ -176,16 +179,17 @@ class MultiStreamActivity : AppCompatActivity() {
                 val slot = slots[detectionCursor % slots.size]
                 detectionCursor++
 
-                val bitmap = captureCell(slot) ?: run { delay(500); continue }
+                val bitmap = captureCell(slot)
+                if (bitmap == null) { delay(500); continue }
 
                 try {
                     val faces = detector.detectFaces(bitmap)
                     if (faces.isNotEmpty()) {
                         val ts = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
                         val entries = faces.mapNotNull { face ->
-                            cropFace(bitmap, face.boundingBox) ?: return@mapNotNull null
+                            val cropped = cropFace(bitmap, face.boundingBox) ?: return@mapNotNull null
                             FaceEntry(
-                                face = cropFace(bitmap, face.boundingBox)!!,
+                                face = cropped,
                                 cameraName = slot.camera.displayLabel(),
                                 time = ts
                             )
