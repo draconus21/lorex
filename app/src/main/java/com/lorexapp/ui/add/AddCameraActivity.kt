@@ -1,6 +1,8 @@
 package com.lorexapp.ui.add
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -32,21 +34,17 @@ class AddCameraActivity : AppCompatActivity() {
         binding.tvTitle.text = if (isEditing) "Edit Camera" else "Add Camera"
 
         if (isEditing) {
-            // Editing an existing camera — hide the copy button
+            // Editing: hide multi-channel and copy-from-last controls
+            binding.switchMultiChannel.visibility = View.GONE
+            binding.layoutMultiChannel.visibility = View.GONE
             binding.btnCopyLast.visibility = View.GONE
             lifecycleScope.launch {
                 val cam = repo.getById(cameraId)
                 if (cam != null) { editingCamera = cam; populateFields(cam) }
             }
         } else {
-            // Adding a new camera — show copy button only if there's a previous entry
-            lifecycleScope.launch {
-                val last = repo.getLastCamera()
-                binding.btnCopyLast.visibility = if (last != null) View.VISIBLE else View.GONE
-                binding.btnCopyLast.setOnClickListener {
-                    if (last != null) copyFromLast(last)
-                }
-            }
+            setupMultiChannelToggle()
+            setupCopyFromLast()
         }
 
         binding.btnSave.setOnClickListener { saveCamera() }
@@ -54,16 +52,70 @@ class AddCameraActivity : AppCompatActivity() {
         binding.btnTestConnection.setOnClickListener { testConnection() }
     }
 
-    /** Fill all fields from [source], then bump the channel by 1 so the
-     *  user only has to change the camera name for the typical NVR use-case. */
+    // ── Multi-channel ─────────────────────────────────────────────────────────
+
+    private fun setupMultiChannelToggle() {
+        binding.switchMultiChannel.setOnCheckedChangeListener { _, isChecked ->
+            binding.layoutSingleChannel.visibility = if (isChecked) View.GONE else View.VISIBLE
+            binding.layoutMultiChannel.visibility  = if (isChecked) View.VISIBLE else View.GONE
+            binding.btnSave.text = if (isChecked) "Add Cameras" else "Save Camera"
+            updatePreview()
+        }
+
+        // Live preview update
+        val watcher = object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) = updatePreview()
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+        }
+        binding.etChannelFrom.addTextChangedListener(watcher)
+        binding.etChannelTo.addTextChangedListener(watcher)
+        binding.etNamePrefix.addTextChangedListener(watcher)
+        updatePreview()
+    }
+
+    private fun updatePreview() {
+        val from   = binding.etChannelFrom.text.toString().toIntOrNull() ?: 1
+        val to     = binding.etChannelTo.text.toString().toIntOrNull() ?: from
+        val prefix = binding.etNamePrefix.text.toString().trim()
+
+        if (from > to) {
+            binding.tvMultiPreview.text = "⚠ From must be ≤ To"
+            return
+        }
+        val count = to - from + 1
+        val names = (from..to).map { ch -> cameraName(prefix, ch) }
+        val preview = when {
+            count <= 4 -> names.joinToString(", ")
+            else       -> "${names.take(3).joinToString(", ")} … ${names.last()} ($count total)"
+        }
+        binding.tvMultiPreview.text = "Will add: $preview"
+    }
+
+    private fun cameraName(prefix: String, channel: Int) =
+        if (prefix.isBlank()) "Camera $channel" else "$prefix $channel"
+
+    // ── Copy from last ────────────────────────────────────────────────────────
+
+    private fun setupCopyFromLast() {
+        lifecycleScope.launch {
+            val last = repo.getLastCamera()
+            binding.btnCopyLast.visibility = if (last != null) View.VISIBLE else View.GONE
+            binding.btnCopyLast.setOnClickListener {
+                if (last != null) copyFromLast(last)
+            }
+        }
+    }
+
     private fun copyFromLast(source: Camera) {
-        populateFields(source.copy(
-            channel = source.channel + 1,
-            name = ""           // leave name blank so user types a new one
-        ))
+        populateFields(source.copy(channel = source.channel + 1, name = ""))
+        binding.etChannelFrom.setText((source.channel + 1).toString())
+        binding.etChannelTo.setText((source.channel + 4).toString())
         binding.etName.requestFocus()
         Toast.makeText(this, "Copied from \"${source.displayLabel()}\"", Toast.LENGTH_SHORT).show()
     }
+
+    // ── Populate / Save ───────────────────────────────────────────────────────
 
     private fun populateFields(cam: Camera) {
         binding.etName.setText(cam.name)
@@ -78,13 +130,11 @@ class AddCameraActivity : AppCompatActivity() {
     }
 
     private fun saveCamera() {
-        val name      = binding.etName.text.toString().trim()
         val host      = binding.etHost.text.toString().trim()
         val rtspPort  = binding.etRtspPort.text.toString().toIntOrNull() ?: 554
         val httpPort  = binding.etHttpPort.text.toString().toIntOrNull() ?: 80
         val username  = binding.etUsername.text.toString().trim()
         val password  = binding.etPassword.text.toString()
-        val channel   = binding.etChannel.text.toString().toIntOrNull() ?: 1
         val subStream = binding.switchSubStream.isChecked
         val is4K      = binding.switch4k.isChecked
 
@@ -92,27 +142,60 @@ class AddCameraActivity : AppCompatActivity() {
         if (username.isBlank()) { binding.etUsername.error = "Username is required"; return }
 
         lifecycleScope.launch {
-            val cam = (editingCamera ?: Camera(name = "", host = "", username = "", password = "")).copy(
-                name = name, host = host, rtspPort = rtspPort, httpPort = httpPort,
-                username = username, password = password, channel = channel,
-                subStream = subStream, is4K = is4K
-            )
-            if (editingCamera != null) repo.update(cam) else repo.insert(cam)
+            if (binding.switchMultiChannel.isChecked && editingCamera == null) {
+                // ── Multi-channel insert ──────────────────────────────────────
+                val from   = binding.etChannelFrom.text.toString().toIntOrNull() ?: 1
+                val to     = binding.etChannelTo.text.toString().toIntOrNull() ?: from
+                val prefix = binding.etNamePrefix.text.toString().trim()
+
+                if (from > to) {
+                    Toast.makeText(this@AddCameraActivity,
+                        "From channel must be ≤ To channel", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                val count = to - from + 1
+                for (ch in from..to) {
+                    repo.insert(Camera(
+                        name = cameraName(prefix, ch),
+                        host = host, rtspPort = rtspPort, httpPort = httpPort,
+                        username = username, password = password,
+                        channel = ch, subStream = subStream, is4K = is4K
+                    ))
+                }
+                Toast.makeText(this@AddCameraActivity,
+                    "Added $count camera${if (count > 1) "s" else ""}",
+                    Toast.LENGTH_SHORT).show()
+
+            } else {
+                // ── Single insert / edit ──────────────────────────────────────
+                val name    = binding.etName.text.toString().trim()
+                val channel = binding.etChannel.text.toString().toIntOrNull() ?: 1
+                val cam = (editingCamera ?: Camera(
+                    name = "", host = "", username = "", password = ""
+                )).copy(
+                    name = name, host = host, rtspPort = rtspPort, httpPort = httpPort,
+                    username = username, password = password,
+                    channel = channel, subStream = subStream, is4K = is4K
+                )
+                if (editingCamera != null) repo.update(cam) else repo.insert(cam)
+            }
             finish()
         }
     }
+
+    // ── Test connection ───────────────────────────────────────────────────────
 
     private fun testConnection() {
         val host     = binding.etHost.text.toString().trim()
         val httpPort = binding.etHttpPort.text.toString().toIntOrNull() ?: 80
         val username = binding.etUsername.text.toString().trim()
         val password = binding.etPassword.text.toString()
-        val channel  = binding.etChannel.text.toString().toIntOrNull() ?: 1
 
         if (host.isBlank()) { binding.etHost.error = "Enter a host first"; return }
 
         val temp = Camera(name = "test", host = host, httpPort = httpPort,
-                          username = username, password = password, channel = channel)
+                          username = username, password = password, channel = 1)
         binding.btnTestConnection.isEnabled = false
         binding.btnTestConnection.text = "Testing…"
 

@@ -118,8 +118,18 @@
                 android:inputType="textPassword" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Channel -->
+        <!-- Channel section -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_multi_channel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add multiple channels at once"
+            android:textColor="@color/on_background"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Single channel (shown when multi is OFF) -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_single_channel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Channel Number (1 = first camera)"
@@ -132,6 +142,75 @@
                 android:inputType="number"
                 android:text="1" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Multi channel range (shown when multi is ON) -->
+        <LinearLayout
+            android:id="@+id/layout_multi_channel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="From channel"
+                    android:layout_marginEnd="8dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_channel_from"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="To channel"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_channel_to"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="4" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Name prefix (optional, e.g. \"Front\")"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginTop="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_name_prefix"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/tv_multi_preview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/on_background_secondary"
+                android:textSize="12sp"
+                android:text="Will add: Camera 1, Camera 2, Camera 3, Camera 4" />
+
+        </LinearLayout>
 
         <!-- Sub-stream toggle -->
         <com.google.android.material.switchmaterial.SwitchMaterial
