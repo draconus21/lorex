@@ -33,6 +33,23 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- 4K badge -->
+        <TextView
+            android:id="@+id/tv_4k_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="6dp"
+            android:background="@drawable/bg_badge_4k"
+            android:paddingHorizontal="5dp"
+            android:paddingVertical="2dp"
+            android:text="4K"
+            android:textColor="@android:color/white"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintEnd_toStartOf="@id/view_status"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <!-- Channel badge -->
         <TextView
             android:id="@+id/tv_channel"

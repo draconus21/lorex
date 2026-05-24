@@ -1,6 +1,7 @@
 package com.lorexapp.ui.grid
 
 import android.view.*
+import android.view.View
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -52,6 +53,9 @@ class CameraGridAdapter(
                 if (camera.isEnabled) R.drawable.bg_status_online
                 else R.drawable.bg_status_offline
             )
+
+            // 4K badge
+            binding.tv4kBadge.visibility = if (camera.is4K) View.VISIBLE else View.GONE
 
             binding.root.setOnClickListener { onCameraClick(camera) }
             binding.root.setOnLongClickListener { v ->

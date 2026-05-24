@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.lorexapp.model.Camera
 
-@Database(entities = [Camera::class], version = 1, exportSchema = false)
+@Database(entities = [Camera::class], version = 2, exportSchema = false)
 abstract class CameraDatabase : RoomDatabase() {
     abstract fun cameraDao(): CameraDao
 
@@ -19,7 +19,9 @@ abstract class CameraDatabase : RoomDatabase() {
                     context.applicationContext,
                     CameraDatabase::class.java,
                     "lorexcam_database"
-                ).build().also { INSTANCE = it }
+                )
+                .fallbackToDestructiveMigration() // dev only — bumped schema for is4K field
+                .build().also { INSTANCE = it }
             }
     }
 }

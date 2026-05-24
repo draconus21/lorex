@@ -86,6 +86,7 @@ class CameraStreamActivity : AppCompatActivity() {
 
         binding.tvCameraName.text = cam.displayLabel()
         binding.tvRtspUrl.text = "Ch ${cam.channel} · ${cam.host}"
+        binding.tv4kBadge.visibility = if (cam.is4K) View.VISIBLE else View.GONE
 
         binding.btnBack.setOnClickListener { finish() }
         binding.btnSnapshot.setOnClickListener { requestSnapshot() }
@@ -123,13 +124,23 @@ class CameraStreamActivity : AppCompatActivity() {
 
     private fun startStream() {
         val cam = camera ?: return
+
+        // 4K H.265 streams need a much larger network buffer and explicit HW codec hints.
+        // 1080p streams use a tight 200 ms cache to keep latency low.
+        val networkCache = if (cam.is4K) 1500 else 200
+
         val options = ArrayList<String>().apply {
             add("--no-drop-late-frames")
             add("--no-skip-frames")
             add("--rtsp-tcp")
-            add("--network-caching=200")
+            add("--network-caching=$networkCache")
             add("--clock-jitter=0")
             add("--clock-synchro=0")
+            if (cam.is4K) {
+                // Prefer hardware H.265 decoder; fall back through the chain automatically
+                add("--codec=mediacodec_ndk,mediacodec,iomx,any")
+                add("--video-filter=")          // disable sw filters that stall on 4K
+            }
         }
         libVLC = LibVLC(this, options)
         mediaPlayer = MediaPlayer(libVLC!!).apply {

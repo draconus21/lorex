@@ -16,6 +16,7 @@ data class Camera(
     val channel: Int = 1,       // camera channel on NVR/DVR (1-based)
     val subStream: Boolean = false, // false=main stream, true=sub (lower bandwidth)
     val isEnabled: Boolean = true,
+    val is4K: Boolean = false,
     val sortOrder: Int = 0,
     val thumbnailPath: String? = null
 ) {

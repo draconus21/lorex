@@ -74,6 +74,7 @@ class AddCameraActivity : AppCompatActivity() {
         binding.etPassword.setText(cam.password)
         binding.etChannel.setText(cam.channel.toString())
         binding.switchSubStream.isChecked = cam.subStream
+        binding.switch4k.isChecked = cam.is4K
     }
 
     private fun saveCamera() {
@@ -85,6 +86,7 @@ class AddCameraActivity : AppCompatActivity() {
         val password  = binding.etPassword.text.toString()
         val channel   = binding.etChannel.text.toString().toIntOrNull() ?: 1
         val subStream = binding.switchSubStream.isChecked
+        val is4K      = binding.switch4k.isChecked
 
         if (host.isBlank()) { binding.etHost.error = "Host / IP is required"; return }
         if (username.isBlank()) { binding.etUsername.error = "Username is required"; return }
@@ -92,7 +94,8 @@ class AddCameraActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val cam = (editingCamera ?: Camera(name = "", host = "", username = "", password = "")).copy(
                 name = name, host = host, rtspPort = rtspPort, httpPort = httpPort,
-                username = username, password = password, channel = channel, subStream = subStream
+                username = username, password = password, channel = channel,
+                subStream = subStream, is4K = is4K
             )
             if (editingCamera != null) repo.update(cam) else repo.insert(cam)
             finish()

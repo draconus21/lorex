@@ -140,6 +140,15 @@
             android:layout_height="wrap_content"
             android:text="Use Sub-stream (lower bandwidth / quality)"
             android:textColor="@color/on_background"
+            android:layout_marginBottom="8dp" />
+
+        <!-- 4K toggle -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_4k"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="4K stream (increases buffer, enables H.265 HW decoder)"
+            android:textColor="@color/on_background"
             android:layout_marginBottom="20dp" />
 
         <!-- Copy from last entry (only shown when adding, not editing) -->
