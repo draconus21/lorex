@@ -81,6 +81,16 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
+        <!-- Mute toggle -->
+        <ImageButton
+            android:id="@+id/btn_mute"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_volume_on"
+            android:contentDescription="Toggle mute"
+            android:tint="@android:color/white" />
+
         <!-- Snapshot -->
         <ImageButton
             android:id="@+id/btn_snapshot"
@@ -113,6 +123,19 @@
             android:tint="@android:color/white" />
 
     </LinearLayout>
+
+    <!-- Push-to-talk button (bottom-left, above PTZ panel) -->
+    <ImageButton
+        android:id="@+id/btn_talk"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_talk_button"
+        android:src="@drawable/ic_mic"
+        android:contentDescription="Push to talk"
+        android:tint="@android:color/white"
+        android:alpha="0.85" />
 
     <!-- Status text -->
     <TextView

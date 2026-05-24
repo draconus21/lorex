@@ -21,6 +21,8 @@ import com.lorexapp.databinding.ActivityCameraStreamBinding
 import com.lorexapp.detection.PersonDetector
 import com.lorexapp.model.Camera
 import com.lorexapp.network.LorexApiClient
+import com.lorexapp.network.TalkbackManager
+import com.lorexapp.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.videolan.libvlc.LibVLC
@@ -52,9 +54,22 @@ class CameraStreamActivity : AppCompatActivity() {
     private var detectionJob: Job? = null
     private var detectionEnabled = false
 
+    // Mute
+    private var isMuted = false
+
+    // Talkback
+    private var talkbackManager: TalkbackManager? = null
+
     private val storagePermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> if (granted) takeSnapshot() }
+
+    private val micPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) startTalkback()
+        else Toast.makeText(this, "Microphone permission required for talk", Toast.LENGTH_SHORT).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,6 +106,18 @@ class CameraStreamActivity : AppCompatActivity() {
         binding.btnBack.setOnClickListener { finish() }
         binding.btnSnapshot.setOnClickListener { requestSnapshot() }
         binding.btnDetection.setOnClickListener { toggleDetection() }
+
+        // Mute toggle
+        binding.btnMute.setOnClickListener { toggleMute() }
+
+        // Push-to-talk: hold to talk, release to stop
+        binding.btnTalk.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> { requestTalkback(); true }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { stopTalkback(); true }
+                else -> false
+            }
+        }
 
         // PTZ buttons — start on press, stop on release
         listOf(
@@ -287,6 +314,45 @@ class CameraStreamActivity : AppCompatActivity() {
             )
         }
 
+    // ── Mute ──────────────────────────────────────────────────────────────────
+
+    private fun toggleMute() {
+        isMuted = !isMuted
+        mediaPlayer?.setVolume(if (isMuted) 0 else 100)
+        binding.btnMute.setImageResource(
+            if (isMuted) R.drawable.ic_volume_off else R.drawable.ic_volume_on
+        )
+        binding.btnMute.alpha = if (isMuted) 0.5f else 1f
+    }
+
+    // ── Talkback ──────────────────────────────────────────────────────────────
+
+    private fun requestTalkback() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+        } else {
+            startTalkback()
+        }
+    }
+
+    private fun startTalkback() {
+        val cam = camera ?: return
+        if (talkbackManager?.isRunning == true) return
+        talkbackManager = TalkbackManager(cam).also { it.start(lifecycleScope) }
+        binding.btnTalk.setImageResource(R.drawable.ic_mic_active)
+        binding.btnTalk.setBackgroundResource(R.drawable.bg_talk_button_active)
+        binding.btnTalk.alpha = 1f
+    }
+
+    private fun stopTalkback() {
+        talkbackManager?.stop()
+        talkbackManager = null
+        binding.btnTalk.setImageResource(R.drawable.ic_mic)
+        binding.btnTalk.setBackgroundResource(R.drawable.bg_talk_button)
+        binding.btnTalk.alpha = 0.85f
+    }
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onPause() {
@@ -302,6 +368,7 @@ class CameraStreamActivity : AppCompatActivity() {
     override fun onDestroy() {
         detectionJob?.cancel()
         detector.close()
+        stopTalkback()
         releasePlayer()
         super.onDestroy()
     }
