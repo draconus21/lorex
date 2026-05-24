@@ -231,9 +231,9 @@ class CameraStreamActivity : AppCompatActivity() {
                         val persons = detector.detectPersons(bitmap)
                         val faces   = detector.detectFaces(bitmap)
                         withContext(Dispatchers.Main) {
-                            binding.detectionOverlay.scaleX =
+                            binding.detectionOverlay.detectionScaleX =
                                 binding.detectionOverlay.width.toFloat() / bitmap.width
-                            binding.detectionOverlay.scaleY =
+                            binding.detectionOverlay.detectionScaleY =
                                 binding.detectionOverlay.height.toFloat() / bitmap.height
                             binding.detectionOverlay.updateDetections(persons, faces)
                         }

@@ -37,9 +37,10 @@ class DetectionOverlayView @JvmOverloads constructor(
         typeface = Typeface.DEFAULT_BOLD
     }
 
-    // Scale factors: detection runs on a potentially different resolution
-    var scaleX: Float = 1f
-    var scaleY: Float = 1f
+    // Scale factors: detection runs on a potentially different resolution.
+    // Named detectionScaleX/Y to avoid clashing with View.scaleX / View.scaleY.
+    var detectionScaleX: Float = 1f
+    var detectionScaleY: Float = 1f
 
     private var persons: List<PersonDetector.DetectedPerson> = emptyList()
     private var faces: List<PersonDetector.DetectedFace> = emptyList()
@@ -86,7 +87,7 @@ class DetectionOverlayView @JvmOverloads constructor(
     }
 
     private fun Rect.toScaled() = RectF(
-        left * scaleX, top * scaleY,
-        right * scaleX, bottom * scaleY
+        left * detectionScaleX, top * detectionScaleY,
+        right * detectionScaleX, bottom * detectionScaleY
     )
 }
