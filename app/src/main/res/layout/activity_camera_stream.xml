@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- Video surface -->
+    <SurfaceView
+        android:id="@+id/surface_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Detection bounding box overlay -->
+    <com.lorexapp.detection.DetectionOverlayView
+        android:id="@+id/detection_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Top bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/gradient_top"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center_vertical">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back"
+            android:tint="@android:color/white" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/tv_camera_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_rtsp_url"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#AAFFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Snapshot -->
+        <ImageButton
+            android:id="@+id/btn_snapshot"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_camera"
+            android:contentDescription="Take snapshot"
+            android:tint="@android:color/white" />
+
+        <!-- Detection toggle -->
+        <ImageButton
+            android:id="@+id/btn_detection"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_detection"
+            android:contentDescription="Toggle person detection"
+            android:tint="@android:color/white"
+            android:alpha="0.5" />
+
+        <!-- PTZ panel toggle -->
+        <ImageButton
+            android:id="@+id/btn_ptz_toggle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_ptz"
+            android:contentDescription="Toggle PTZ"
+            android:tint="@android:color/white" />
+
+    </LinearLayout>
+
+    <!-- Status text -->
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="#80000000"
+        android:padding="8dp"
+        android:textColor="@android:color/white"
+        android:textSize="14sp" />
+
+    <!-- PTZ Control Panel (bottom-right) -->
+    <LinearLayout
+        android:id="@+id/ptz_panel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_ptz_panel"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:visibility="gone">
+
+        <!-- Row: Zoom In -->
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center"
+            android:layout_gravity="center_horizontal">
+            <ImageButton android:id="@+id/btn_zoom_in"
+                style="@style/PtzButton" android:src="@drawable/ic_zoom_in"
+                android:contentDescription="Zoom in" />
+        </LinearLayout>
+
+        <!-- Row: Left / Up / Right -->
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <ImageButton android:id="@+id/btn_ptz_left"
+                style="@style/PtzButton" android:src="@drawable/ic_arrow_left"
+                android:contentDescription="Pan left" />
+            <ImageButton android:id="@+id/btn_ptz_up"
+                style="@style/PtzButton" android:src="@drawable/ic_arrow_up"
+                android:contentDescription="Tilt up" />
+            <ImageButton android:id="@+id/btn_ptz_right"
+                style="@style/PtzButton" android:src="@drawable/ic_arrow_right"
+                android:contentDescription="Pan right" />
+        </LinearLayout>
+
+        <!-- Row: Down -->
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center"
+            android:layout_gravity="center_horizontal">
+            <ImageButton android:id="@+id/btn_ptz_down"
+                style="@style/PtzButton" android:src="@drawable/ic_arrow_down"
+                android:contentDescription="Tilt down" />
+        </LinearLayout>
+
+        <!-- Row: Zoom Out -->
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center"
+            android:layout_gravity="center_horizontal">
+            <ImageButton android:id="@+id/btn_zoom_out"
+                style="@style/PtzButton" android:src="@drawable/ic_zoom_out"
+                android:contentDescription="Zoom out" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

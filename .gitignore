@@ -1,0 +1,44 @@
+# Built outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Build directories
+build/
+app/build/
+
+# Gradle
+.gradle/
+gradle-wrapper.jar
+local.properties
+
+# Android Studio / IntelliJ
+*.iml
+*.ipr
+*.iws
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+captures/
+.externalNativeBuild/
+.cxx/
+cmake-build-*/
+
+# Keystore / signing (never commit these)
+*.jks
+*.keystore
+keystore.properties
+release/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+tmp/

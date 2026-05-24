@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand -->
+    <color name="accent">#FF1976D2</color>
+    <color name="accent_dark">#FF1565C0</color>
+
+    <!-- Dark theme surfaces -->
+    <color name="background">#FF0E0E0E</color>
+    <color name="surface">#FF1E1E1E</color>
+    <color name="surface_variant">#FF2C2C2C</color>
+
+    <!-- Text -->
+    <color name="on_background">#FFFFFFFF</color>
+    <color name="on_background_secondary">#99FFFFFF</color>
+    <color name="on_surface">#FFFFFFFF</color>
+    <color name="on_surface_secondary">#99FFFFFF</color>
+
+    <!-- Status indicators -->
+    <color name="status_online">#FF4CAF50</color>
+    <color name="status_offline">#FFF44336</color>
+
+    <!-- Nav -->
+    <color name="nav_icon_selected">#FF1976D2</color>
+    <color name="nav_icon_unselected">#99FFFFFF</color>
+</resources>

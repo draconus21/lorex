@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LorexCam</string>
+    <string name="cameras">Cameras</string>
+    <string name="add_camera">Add Camera</string>
+    <string name="edit_camera">Edit Camera</string>
+    <string name="no_cameras">No cameras added yet</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="test_connection">Test Connection</string>
+    <string name="snapshot_saved">Snapshot saved to Gallery</string>
+    <string name="person_detected">Person detected</string>
+</resources>
