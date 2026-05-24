@@ -253,7 +253,10 @@ class CameraStreamActivity : AppCompatActivity() {
     private suspend fun captureFrameViaPixelCopy(): Bitmap? =
         suspendCancellableCoroutine { cont ->
             val surface = binding.vlcVideoLayout
-            if (surface.width == 0 || surface.height == 0) { cont.resume(null); return@suspendCancellableCoroutine }
+            if (surface.width == 0 || surface.height == 0) {
+                cont.resumeWith(Result.success(null))
+                return@suspendCancellableCoroutine
+            }
             val bitmap = Bitmap.createBitmap(surface.width, surface.height, Bitmap.Config.ARGB_8888)
             PixelCopy.request(
                 window,
@@ -263,8 +266,12 @@ class CameraStreamActivity : AppCompatActivity() {
                 ),
                 bitmap,
                 { result ->
-                    if (result == PixelCopy.SUCCESS) cont.resume(bitmap)
-                    else { bitmap.recycle(); cont.resume(null) }
+                    if (result == PixelCopy.SUCCESS) {
+                        cont.resumeWith(Result.success(bitmap))
+                    } else {
+                        bitmap.recycle()
+                        cont.resumeWith(Result.success(null))
+                    }
                 },
                 Handler(Looper.getMainLooper())
             )

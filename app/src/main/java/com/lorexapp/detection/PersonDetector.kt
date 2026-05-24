@@ -9,11 +9,11 @@ import com.google.mlkit.vision.objects.ObjectDetection
 import com.google.mlkit.vision.objects.ObjectDetector
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * Wraps ML Kit Object Detection (person) and Face Detection.
+ * Uses resumeWith(Result) throughout to avoid the onCancellation
+ * overload ambiguity introduced in Kotlin 1.9.
  */
 class PersonDetector {
 
@@ -25,20 +25,16 @@ class PersonDetector {
 
     data class DetectedFace(
         val boundingBox: Rect,
-        val label: String?   // set by user via labeling UI
+        val label: String?
     )
-
-    // ── Object detector – person class ───────────────────────────────────────
 
     private val objectDetector: ObjectDetector = ObjectDetection.getClient(
         ObjectDetectorOptions.Builder()
-            .setDetectorMode(ObjectDetectorOptions.STREAM_MODE) // frame-by-frame
+            .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
             .enableClassification()
             .enableMultipleObjects()
             .build()
     )
-
-    // ── Face detector ─────────────────────────────────────────────────────────
 
     private val faceDetector = FaceDetection.getClient(
         FaceDetectorOptions.Builder()
@@ -49,9 +45,6 @@ class PersonDetector {
             .build()
     )
 
-    /**
-     * Detect persons in [bitmap]. Returns boxes for objects classified as "Person".
-     */
     suspend fun detectPersons(bitmap: Bitmap): List<DetectedPerson> =
         suspendCancellableCoroutine { cont ->
             val image = InputImage.fromBitmap(bitmap, 0)
@@ -60,7 +53,8 @@ class PersonDetector {
                     val persons = objects
                         .filter { obj ->
                             obj.labels.any { label ->
-                                label.text.equals("Person", ignoreCase = true) && label.confidence > 0.5f
+                                label.text.equals("Person", ignoreCase = true) &&
+                                    label.confidence > 0.5f
                             }
                         }
                         .map { obj ->
@@ -69,15 +63,13 @@ class PersonDetector {
                                 ?.confidence ?: 0f
                             DetectedPerson(obj.boundingBox, conf, obj.trackingId)
                         }
-                    cont.resume(persons)
+                    cont.resumeWith(Result.success(persons))
                 }
-                .addOnFailureListener { cont.resumeWithException(it) }
+                .addOnFailureListener { e ->
+                    cont.resumeWith(Result.failure(e))
+                }
         }
 
-    /**
-     * Detect faces in [bitmap]. Returns face bounding boxes with optional labels.
-     * Labels are looked up from [knownFaces] map (trackingId or face hash → name).
-     */
     suspend fun detectFaces(
         bitmap: Bitmap,
         knownFaces: Map<Int, String> = emptyMap()
@@ -89,9 +81,11 @@ class PersonDetector {
                     val label = face.trackingId?.let { knownFaces[it] }
                     DetectedFace(face.boundingBox, label)
                 }
-                cont.resume(result)
+                cont.resumeWith(Result.success(result))
             }
-            .addOnFailureListener { cont.resumeWithException(it) }
+            .addOnFailureListener { e ->
+                cont.resumeWith(Result.failure(e))
+            }
     }
 
     fun close() {
