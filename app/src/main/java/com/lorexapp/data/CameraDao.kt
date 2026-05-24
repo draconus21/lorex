@@ -27,6 +27,9 @@ interface CameraDao {
     @Query("UPDATE cameras SET sortOrder = :order WHERE id = :id")
     suspend fun updateSortOrder(id: Int, order: Int)
 
+    @Query("SELECT * FROM cameras ORDER BY id DESC LIMIT 1")
+    suspend fun getLastCamera(): Camera?
+
     @Query("SELECT COUNT(*) FROM cameras")
     suspend fun cameraCount(): Int
 }

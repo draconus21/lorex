@@ -1,8 +1,7 @@
 package com.lorexapp.ui.add
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -20,6 +19,7 @@ class AddCameraActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAddCameraBinding
     private var editingCamera: Camera? = null
+    private val repo get() = (application as LorexApp).repository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,12 +27,24 @@ class AddCameraActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val cameraId = intent.getIntExtra(EXTRA_CAMERA_ID, -1)
-        if (cameraId != -1) {
+        val isEditing = cameraId != -1
+
+        binding.tvTitle.text = if (isEditing) "Edit Camera" else "Add Camera"
+
+        if (isEditing) {
+            // Editing an existing camera — hide the copy button
+            binding.btnCopyLast.visibility = View.GONE
             lifecycleScope.launch {
-                val cam = (application as LorexApp).repository.getById(cameraId)
-                if (cam != null) {
-                    editingCamera = cam
-                    populateFields(cam)
+                val cam = repo.getById(cameraId)
+                if (cam != null) { editingCamera = cam; populateFields(cam) }
+            }
+        } else {
+            // Adding a new camera — show copy button only if there's a previous entry
+            lifecycleScope.launch {
+                val last = repo.getLastCamera()
+                binding.btnCopyLast.visibility = if (last != null) View.VISIBLE else View.GONE
+                binding.btnCopyLast.setOnClickListener {
+                    if (last != null) copyFromLast(last)
                 }
             }
         }
@@ -40,8 +52,17 @@ class AddCameraActivity : AppCompatActivity() {
         binding.btnSave.setOnClickListener { saveCamera() }
         binding.btnCancel.setOnClickListener { finish() }
         binding.btnTestConnection.setOnClickListener { testConnection() }
+    }
 
-        binding.tvTitle.text = if (cameraId != -1) "Edit Camera" else "Add Camera"
+    /** Fill all fields from [source], then bump the channel by 1 so the
+     *  user only has to change the camera name for the typical NVR use-case. */
+    private fun copyFromLast(source: Camera) {
+        populateFields(source.copy(
+            channel = source.channel + 1,
+            name = ""           // leave name blank so user types a new one
+        ))
+        binding.etName.requestFocus()
+        Toast.makeText(this, "Copied from \"${source.displayLabel()}\"", Toast.LENGTH_SHORT).show()
     }
 
     private fun populateFields(cam: Camera) {
@@ -56,35 +77,22 @@ class AddCameraActivity : AppCompatActivity() {
     }
 
     private fun saveCamera() {
-        val name     = binding.etName.text.toString().trim()
-        val host     = binding.etHost.text.toString().trim()
-        val rtspPort = binding.etRtspPort.text.toString().toIntOrNull() ?: 554
-        val httpPort = binding.etHttpPort.text.toString().toIntOrNull() ?: 80
-        val username = binding.etUsername.text.toString().trim()
-        val password = binding.etPassword.text.toString()
-        val channel  = binding.etChannel.text.toString().toIntOrNull() ?: 1
+        val name      = binding.etName.text.toString().trim()
+        val host      = binding.etHost.text.toString().trim()
+        val rtspPort  = binding.etRtspPort.text.toString().toIntOrNull() ?: 554
+        val httpPort  = binding.etHttpPort.text.toString().toIntOrNull() ?: 80
+        val username  = binding.etUsername.text.toString().trim()
+        val password  = binding.etPassword.text.toString()
+        val channel   = binding.etChannel.text.toString().toIntOrNull() ?: 1
         val subStream = binding.switchSubStream.isChecked
 
-        if (host.isBlank()) {
-            binding.etHost.error = "Host / IP is required"
-            return
-        }
-        if (username.isBlank()) {
-            binding.etUsername.error = "Username is required"
-            return
-        }
+        if (host.isBlank()) { binding.etHost.error = "Host / IP is required"; return }
+        if (username.isBlank()) { binding.etUsername.error = "Username is required"; return }
 
-        val repo = (application as LorexApp).repository
         lifecycleScope.launch {
             val cam = (editingCamera ?: Camera(name = "", host = "", username = "", password = "")).copy(
-                name = name,
-                host = host,
-                rtspPort = rtspPort,
-                httpPort = httpPort,
-                username = username,
-                password = password,
-                channel = channel,
-                subStream = subStream
+                name = name, host = host, rtspPort = rtspPort, httpPort = httpPort,
+                username = username, password = password, channel = channel, subStream = subStream
             )
             if (editingCamera != null) repo.update(cam) else repo.insert(cam)
             finish()
@@ -100,10 +108,8 @@ class AddCameraActivity : AppCompatActivity() {
 
         if (host.isBlank()) { binding.etHost.error = "Enter a host first"; return }
 
-        val temp = Camera(
-            name = "test", host = host, httpPort = httpPort,
-            username = username, password = password, channel = channel
-        )
+        val temp = Camera(name = "test", host = host, httpPort = httpPort,
+                          username = username, password = password, channel = channel)
         binding.btnTestConnection.isEnabled = false
         binding.btnTestConnection.text = "Testing…"
 
@@ -111,11 +117,9 @@ class AddCameraActivity : AppCompatActivity() {
             val ok = LorexApiClient.isReachable(temp)
             binding.btnTestConnection.isEnabled = true
             binding.btnTestConnection.text = "Test Connection"
-            Toast.makeText(
-                this@AddCameraActivity,
+            Toast.makeText(this@AddCameraActivity,
                 if (ok) "✓ Camera reachable" else "✗ Could not reach camera",
-                Toast.LENGTH_SHORT
-            ).show()
+                Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -142,6 +142,18 @@
             android:textColor="@color/on_background"
             android:layout_marginBottom="20dp" />
 
+        <!-- Copy from last entry (only shown when adding, not editing) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_copy_last"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Copy from last entry"
+            android:drawableStart="@drawable/ic_add"
+            android:drawablePadding="8dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone" />
+
         <!-- Test connection -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_test_connection"

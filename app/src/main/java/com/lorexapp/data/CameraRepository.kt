@@ -7,6 +7,7 @@ class CameraRepository(private val dao: CameraDao) {
     val allCameras: Flow<List<Camera>> = dao.getAllCameras()
 
     suspend fun getById(id: Int): Camera? = dao.getCameraById(id)
+    suspend fun getLastCamera(): Camera? = dao.getLastCamera()
     suspend fun insert(camera: Camera): Long = dao.insertCamera(camera)
     suspend fun update(camera: Camera) = dao.updateCamera(camera)
     suspend fun delete(camera: Camera) = dao.deleteCamera(camera)
