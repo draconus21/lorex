@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.PixelFormat
 import android.media.MediaScannerConnection
 import android.os.*
 import android.view.*
@@ -13,6 +12,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.lorexapp.LorexApp
 import com.lorexapp.databinding.ActivityCameraStreamBinding
@@ -20,9 +22,11 @@ import com.lorexapp.detection.PersonDetector
 import com.lorexapp.model.Camera
 import com.lorexapp.network.LorexApiClient
 import kotlinx.coroutines.*
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.util.VLCVideoLayout
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -60,6 +64,11 @@ class CameraStreamActivity : AppCompatActivity() {
         // Full-screen immersive
         supportActionBar?.hide()
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, binding.root).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
 
         val cameraId = intent.getIntExtra(EXTRA_CAMERA_ID, -1)
         if (cameraId == -1) { finish(); return }
@@ -78,13 +87,8 @@ class CameraStreamActivity : AppCompatActivity() {
         binding.tvCameraName.text = cam.displayLabel()
         binding.tvRtspUrl.text = "Ch ${cam.channel} · ${cam.host}"
 
-        // Back button
         binding.btnBack.setOnClickListener { finish() }
-
-        // Snapshot
         binding.btnSnapshot.setOnClickListener { requestSnapshot() }
-
-        // Detection toggle
         binding.btnDetection.setOnClickListener { toggleDetection() }
 
         // PTZ buttons — start on press, stop on release
@@ -111,18 +115,10 @@ class CameraStreamActivity : AppCompatActivity() {
             }
         }
 
-        // Toggle PTZ panel visibility
         binding.btnPtzToggle.setOnClickListener {
             val vis = if (binding.ptzPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
             binding.ptzPanel.visibility = vis
         }
-
-        // SurfaceHolder callback
-        binding.surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceCreated(holder: SurfaceHolder) {}
-            override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int) {}
-            override fun surfaceDestroyed(holder: SurfaceHolder) { releasePlayer() }
-        })
     }
 
     private fun startStream() {
@@ -136,12 +132,13 @@ class CameraStreamActivity : AppCompatActivity() {
             add("--clock-synchro=0")
         }
         libVLC = LibVLC(this, options)
-        mediaPlayer = MediaPlayer(libVLC).apply {
+        mediaPlayer = MediaPlayer(libVLC!!).apply {
             val media = Media(libVLC, android.net.Uri.parse(cam.rtspUrl()))
             media.setHWDecoderEnabled(true, false)
             this.media = media
             media.release()
-            attachViews(binding.surfaceView, null, false, false)
+            // VLCVideoLayout is required by LibVLC 3.x Android binding
+            attachViews(binding.vlcVideoLayout, null, false, false)
             play()
         }
 
@@ -149,7 +146,7 @@ class CameraStreamActivity : AppCompatActivity() {
         mediaPlayer?.setEventListener { event ->
             runOnUiThread {
                 when (event.type) {
-                    MediaPlayer.Event.Playing -> binding.tvStatus.text = ""
+                    MediaPlayer.Event.Playing  -> binding.tvStatus.text = ""
                     MediaPlayer.Event.Buffering -> binding.tvStatus.text = "Buffering…"
                     MediaPlayer.Event.EncounteredError -> {
                         binding.tvStatus.text = "Stream error – retrying"
@@ -166,7 +163,7 @@ class CameraStreamActivity : AppCompatActivity() {
         startStream()
     }
 
-    // ── Snapshot ──────────────────────────────────────────────────────────────
+    // ── Snapshot (fetched via HTTP from camera, not frame-grabbed) ────────────
 
     private fun requestSnapshot() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
@@ -183,13 +180,14 @@ class CameraStreamActivity : AppCompatActivity() {
         val cam = camera ?: return
         lifecycleScope.launch {
             binding.btnSnapshot.isEnabled = false
-            val result = LorexApiClient.fetchSnapshot(cam)
-            result.onSuccess { bitmap ->
-                saveBitmap(bitmap, cam.displayLabel())
-                Toast.makeText(this@CameraStreamActivity, "Snapshot saved", Toast.LENGTH_SHORT).show()
-            }.onFailure {
-                Toast.makeText(this@CameraStreamActivity, "Snapshot failed: ${it.message}", Toast.LENGTH_SHORT).show()
-            }
+            LorexApiClient.fetchSnapshot(cam)
+                .onSuccess { bitmap ->
+                    saveBitmap(bitmap, cam.displayLabel())
+                    Toast.makeText(this@CameraStreamActivity, "Snapshot saved", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure {
+                    Toast.makeText(this@CameraStreamActivity, "Snapshot failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
             binding.btnSnapshot.isEnabled = true
         }
     }
@@ -227,13 +225,11 @@ class CameraStreamActivity : AppCompatActivity() {
         detectionJob?.cancel()
         detectionJob = lifecycleScope.launch(Dispatchers.Default) {
             while (isActive && detectionEnabled) {
-                val bitmap = captureCurrentFrame()
+                val bitmap = captureFrameViaPixelCopy()
                 if (bitmap != null) {
                     try {
                         val persons = detector.detectPersons(bitmap)
-                        val faces = detector.detectFaces(bitmap)
-
-                        // Scale boxes from bitmap size to overlay size
+                        val faces   = detector.detectFaces(bitmap)
                         withContext(Dispatchers.Main) {
                             binding.detectionOverlay.scaleX =
                                 binding.detectionOverlay.width.toFloat() / bitmap.width
@@ -242,29 +238,37 @@ class CameraStreamActivity : AppCompatActivity() {
                             binding.detectionOverlay.updateDetections(persons, faces)
                         }
                         bitmap.recycle()
-                    } catch (e: Exception) { /* ignore frame errors */ }
+                    } catch (_: Exception) {}
                 }
-                delay(500) // run at ~2 fps to save CPU
+                delay(500) // ~2 fps
             }
         }
     }
 
     /**
-     * Captures the current video frame via LibVLC snapshot to a temp file,
-     * then loads it as a Bitmap.
+     * Captures the video surface using PixelCopy (API 26+, matches minSdk).
+     * LibVLC's Android binding has no snapshot() method; PixelCopy reads
+     * directly from the hardware-composited surface.
      */
-    private fun captureCurrentFrame(): Bitmap? {
-        val player = mediaPlayer ?: return null
-        if (!player.isPlaying) return null
-        return try {
-            val tmp = File(cacheDir, "vlc_snap_${System.currentTimeMillis()}.png")
-            val success = player.snapshot(tmp.absolutePath)
-            if (success && tmp.exists()) {
-                android.graphics.BitmapFactory.decodeFile(tmp.absolutePath)
-                    .also { tmp.delete() }
-            } else null
-        } catch (e: Exception) { null }
-    }
+    private suspend fun captureFrameViaPixelCopy(): Bitmap? =
+        suspendCancellableCoroutine { cont ->
+            val surface = binding.vlcVideoLayout
+            if (surface.width == 0 || surface.height == 0) { cont.resume(null); return@suspendCancellableCoroutine }
+            val bitmap = Bitmap.createBitmap(surface.width, surface.height, Bitmap.Config.ARGB_8888)
+            PixelCopy.request(
+                window,
+                android.graphics.Rect(
+                    surface.left, surface.top,
+                    surface.right, surface.bottom
+                ),
+                bitmap,
+                { result ->
+                    if (result == PixelCopy.SUCCESS) cont.resume(bitmap)
+                    else { bitmap.recycle(); cont.resume(null) }
+                },
+                Handler(Looper.getMainLooper())
+            )
+        }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 

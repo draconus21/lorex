@@ -1,9 +1,6 @@
 package com.lorexapp.ui.grid
 
-import android.net.Uri
 import android.view.*
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView

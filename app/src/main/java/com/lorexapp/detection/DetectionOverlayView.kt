@@ -4,8 +4,6 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
-import androidx.core.content.ContextCompat
-import com.lorexapp.R
 
 /**
  * Transparent overlay that draws person and face bounding boxes

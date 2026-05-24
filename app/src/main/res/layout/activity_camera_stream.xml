@@ -6,9 +6,9 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Video surface -->
-    <SurfaceView
-        android:id="@+id/surface_view"
+    <!-- VLCVideoLayout required by LibVLC 3.x Android binding -->
+    <org.videolan.libvlc.util.VLCVideoLayout
+        android:id="@+id/vlc_video_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
