@@ -158,7 +158,6 @@ class CameraStreamActivity : AppCompatActivity() {
             runOnUiThread {
                 when (event.type) {
                     MediaPlayer.Event.Playing  -> binding.tvStatus.text = ""
-                    MediaPlayer.Event.Buffering -> binding.tvStatus.text = "Buffering…"
                     MediaPlayer.Event.EncounteredError -> {
                         binding.tvStatus.text = "Stream error – retrying"
                         Handler(Looper.getMainLooper()).postDelayed({ retryStream() }, 3000)
