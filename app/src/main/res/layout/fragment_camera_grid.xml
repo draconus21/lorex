@@ -18,15 +18,33 @@
             app:title="LorexCam"
             app:titleTextColor="@color/on_surface">
 
-            <ImageButton
-                android:id="@+id/btn_grid_toggle"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Toggle grid columns"
-                android:src="@drawable/ic_grid_3" />
+                android:orientation="horizontal">
+
+                <!-- Live multi-stream view -->
+                <ImageButton
+                    android:id="@+id/btn_live_view"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Live view all cameras"
+                    android:src="@drawable/ic_view_live"
+                    android:tint="@color/on_surface" />
+
+                <ImageButton
+                    android:id="@+id/btn_grid_toggle"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Toggle grid columns"
+                    android:src="@drawable/ic_grid_3" />
+
+            </LinearLayout>
+
+        </com.google.android.material.appbar.MaterialToolbar>
 
         </com.google.android.material.appbar.MaterialToolbar>
 

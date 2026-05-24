@@ -112,3 +112,37 @@ object LorexApiClient {
         }.getOrDefault(false)
     }
 }
+
+    // ── Light control ─────────────────────────────────────────────────────────
+
+    enum class LightMode { AUTO, ON, OFF }
+
+    /**
+     * Cycles the camera IR / white light:
+     *   AUTO  – camera decides based on ambient light
+     *   ON    – force illuminators on at full brightness
+     *   OFF   – turn all illuminators off
+     *
+     * Uses the Dahua configManager CGI which all Lorex firmware supports.
+     */
+    suspend fun setLight(camera: Camera, mode: LightMode): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val ch = camera.channel - 1
+                val modeStr = when (mode) {
+                    LightMode.AUTO -> "Auto"
+                    LightMode.ON   -> "Manual"
+                    LightMode.OFF  -> "Off"
+                }
+                var url = "${camera.httpBase()}/cgi-bin/configManager.cgi" +
+                          "?action=setConfig&Lighting[$ch][0].Mode=$modeStr"
+                if (mode == LightMode.ON) {
+                    // Also set brightness to 100 when forcing manual on
+                    url += "&Lighting[$ch][0].MiddleLight[0].Light=100"
+                }
+                val req = Request.Builder().url(url).build()
+                buildClient(camera).newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) error("Light error ${resp.code}: ${resp.message}")
+                }
+            }
+        }

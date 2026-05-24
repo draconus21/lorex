@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/black">
+
+    <!-- 16:9 video surface -->
+    <org.videolan.libvlc.util.VLCVideoLayout
+        android:id="@+id/vlc_cell"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Camera name label (bottom-left) -->
+    <TextView
+        android:id="@+id/tv_cell_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:background="#80000000"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="3dp"
+        android:textColor="@android:color/white"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Error / connecting overlay -->
+    <TextView
+        android:id="@+id/tv_cell_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="#80000000"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="3dp"
+        android:textColor="@android:color/white"
+        android:textSize="10sp" />
+
+</FrameLayout>

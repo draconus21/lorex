@@ -13,6 +13,7 @@ import com.lorexapp.R
 import com.lorexapp.databinding.FragmentCameraGridBinding
 import com.lorexapp.model.Camera
 import com.lorexapp.ui.add.AddCameraActivity
+import com.lorexapp.ui.multistream.MultiStreamActivity
 import com.lorexapp.ui.stream.CameraStreamActivity
 import com.lorexapp.viewmodel.CameraViewModel
 import com.lorexapp.viewmodel.CameraViewModelFactory
@@ -44,6 +45,10 @@ class CameraGridFragment : Fragment() {
 
         binding.fabAddCamera.setOnClickListener {
             startActivity(Intent(requireContext(), AddCameraActivity::class.java))
+        }
+
+        binding.btnLiveView.setOnClickListener {
+            MultiStreamActivity.start(requireContext())
         }
 
         // Grid column selector (2 or 3 column)

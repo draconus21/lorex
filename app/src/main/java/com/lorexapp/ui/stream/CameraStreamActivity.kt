@@ -57,6 +57,14 @@ class CameraStreamActivity : AppCompatActivity() {
     // Mute
     private var isMuted = false
 
+    // Light cycle: AUTO → ON → OFF → AUTO
+    private var lightMode = LorexApiClient.LightMode.AUTO
+    private val lightIcons = mapOf(
+        LorexApiClient.LightMode.AUTO to R.drawable.ic_light_auto,
+        LorexApiClient.LightMode.ON   to R.drawable.ic_light_on,
+        LorexApiClient.LightMode.OFF  to R.drawable.ic_light_off
+    )
+
     // Talkback
     private var talkbackManager: TalkbackManager? = null
 
@@ -109,6 +117,9 @@ class CameraStreamActivity : AppCompatActivity() {
 
         // Mute toggle
         binding.btnMute.setOnClickListener { toggleMute() }
+
+        // Light cycle
+        binding.btnLight.setOnClickListener { cycleLight() }
 
         // Push-to-talk: hold to talk, release to stop
         binding.btnTalk.setOnTouchListener { _, event ->
@@ -323,6 +334,32 @@ class CameraStreamActivity : AppCompatActivity() {
             if (isMuted) R.drawable.ic_volume_off else R.drawable.ic_volume_on
         )
         binding.btnMute.alpha = if (isMuted) 0.5f else 1f
+    }
+
+    // ── Light ──────────────────────────────────────────────────────────────────
+
+    private fun cycleLight() {
+        val next = when (lightMode) {
+            LorexApiClient.LightMode.AUTO -> LorexApiClient.LightMode.ON
+            LorexApiClient.LightMode.ON   -> LorexApiClient.LightMode.OFF
+            LorexApiClient.LightMode.OFF  -> LorexApiClient.LightMode.AUTO
+        }
+        lightMode = next
+        binding.btnLight.setImageResource(lightIcons[next] ?: R.drawable.ic_light_auto)
+        lifecycleScope.launch {
+            camera?.let { LorexApiClient.setLight(it, next) }
+                ?.onFailure {
+                    Toast.makeText(this@CameraStreamActivity,
+                        "Light control failed: ${it.message}", Toast.LENGTH_SHORT).show()
+                    // Revert icon on failure
+                    lightMode = when (next) {
+                        LorexApiClient.LightMode.ON  -> LorexApiClient.LightMode.AUTO
+                        LorexApiClient.LightMode.OFF -> LorexApiClient.LightMode.ON
+                        LorexApiClient.LightMode.AUTO -> LorexApiClient.LightMode.OFF
+                    }
+                    binding.btnLight.setImageResource(lightIcons[lightMode] ?: R.drawable.ic_light_auto)
+                }
+        }
     }
 
     // ── Talkback ──────────────────────────────────────────────────────────────
